@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { getPool } from "@/lib/db";
-import { getAuth } from "@/lib/request-auth";
+import { getPool } from "../../../lib/db";
+import { getAuth } from "../../../lib/request-auth";
+
+
 
 async function getLimit(pool: any, userId: string, key: string, fallback: any) {
   // get user's latest subscription plan

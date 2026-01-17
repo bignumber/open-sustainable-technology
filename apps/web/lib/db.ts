@@ -1,13 +1,9 @@
 import { Pool } from "pg";
 
-let pool: Pool;
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-export function getPool() {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
-  }
-  return pool;
-}
+// İstersen geriye uyumluluk için bunu da bırak:
+export const getPool = () => pool;

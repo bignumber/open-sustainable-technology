@@ -1,10 +1,27 @@
-import { verifyToken } from "@/lib/auth";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-export function getAuth(req: Request): { userId: string; role: string } {
-  const h = req.headers.get("authorization") || "";
-  const m = h.match(/^Bearer\s+(.+)$/i);
-  if (!m) throw new Error("Missing Authorization: Bearer <token>");
-  const token = m[1];
-  const payload = verifyToken(token);
-  return { userId: payload.userId, role: payload.role };
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("JWT_SECRET is not set");
+
+export async function hashPassword(password: string) {
+  const salt = await bcrypt.genSalt(12);
+  return bcrypt.hash(password, salt);
+}
+
+export async function verifyPassword(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
+}
+
+export function signToken(payload: { userId: string; role: string }) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+}
+
+export function verifyToken(token: string) {
+  return jwt.verify(token, JWT_SECRET) as {
+    userId: string;
+    role: string;
+    iat: number;
+    exp: number;
+  };
 }
