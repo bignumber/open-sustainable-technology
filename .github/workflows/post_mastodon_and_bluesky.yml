@@ -1,0 +1,50 @@
+name: Send URLs from Commit Message as Mastodon
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  toot:
+    # Preventing runs after changes made by Github actions
+    if: "!startsWith(github.event.head_commit.author.name, 'github-actions')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Extract Line with URL 
+        env:
+          default_message: "We welcome a new project to OpenSustain.tech #climate #sustainability #opensource #opensustain #openscience "
+        run: |
+              URL_git="$(git diff HEAD^ HEAD -- README.md | grep '^+' | grep -v '^+++' | grep -o 'https://[a-zA-Z0-9./?=_-]\+' || true)"
+              echo $URL_git
+              URL_git_combine=$default_message"$URL_git"
+              echo "URL_git=$URL_git" >> $GITHUB_ENV
+              echo "URL_git_combine=$URL_git_combine" >> $GITHUB_ENV
+              if [ -z "$URL_git" ]; then
+                echo "No new URLs found in README.md. Skipping the rest of the job."
+                exit 0
+              fi
+              
+      
+      - name: Send toot to Mastodon
+        id: mastodon
+        uses: cbrgm/mastodon-github-action@v2
+        if: "contains(env.URL_git_combine, 'https')"
+        with:
+            access-token: ${{ secrets.MASTODON_ACCESS_TOKEN }} # access token
+            url: ${{ secrets.MASTODON_URL }} # https://example.social
+            message: ${{ env.URL_git_combine }}
+            
+      - name: Send post to Bluesky
+        id: bluesky_post
+        uses: myConsciousness/bluesky-post@v5
+        if: "contains(env.URL_git, 'https')"
+        with:
+          text: ${{ env.URL_git_combine }}
+          link-preview-url: ${{ env.URL_git }}
+          identifier: "opensustaintech.bsky.social"
+          password: ${{ secrets.BLUESKY_PASSWORD }}

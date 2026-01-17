@@ -1,0 +1,19 @@
+name: CI
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - split_fields_climate
+jobs:
+  Awesome_Lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - run: | 
+              npx awesome-lint@2.1.2
+
