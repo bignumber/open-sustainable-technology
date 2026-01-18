@@ -1,8 +1,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error("JWT_SECRET is not set");
+function getSecret() {
+  const s = process.env.JWT_SECRET;
+  if (!s) throw new Error("JWT_SECRET is not set");
+  return s;
+}
 
 export async function hashPassword(password: string) {
   const salt = await bcrypt.genSalt(12);
@@ -14,11 +17,11 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export function signToken(payload: { userId: string; role: string }) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, getSecret(), { expiresIn: "7d" });
 }
 
 export function verifyToken(token: string) {
-  return jwt.verify(token, JWT_SECRET) as {
+  return jwt.verify(token, getSecret()) as {
     userId: string;
     role: string;
     iat: number;

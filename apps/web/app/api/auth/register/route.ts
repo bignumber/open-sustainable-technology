@@ -1,28 +1,34 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { getPool } from "@/lib/db";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    if (!email || !password) {
+    const emailNorm = String(email ?? "").trim().toLowerCase();
+    const passwordStr = String(password ?? "");
+
+    if (!emailNorm || !passwordStr) {
       return NextResponse.json({ error: "email ve password zorunlu" }, { status: 400 });
     }
 
     const pool = getPool();
 
-    // email var mı?
-    const exists = await pool.query("SELECT 1 FROM users WHERE email = $1", [email]);
-    if (exists.rowCount && exists.rowCount > 0) {
+    const exists = await pool.query(
+      "SELECT 1 FROM users WHERE lower(email) = $1",
+      [emailNorm]
+    );
+    if (exists.rowCount > 0) {
       return NextResponse.json({ error: "Bu email zaten kayıtlı" }, { status: 409 });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(passwordStr);
 
+    // role/is_active default'ları DB'de varsa eklemene gerek yok
     await pool.query(
       "INSERT INTO users (email, password_hash) VALUES ($1, $2)",
-      [email, hash]
+      [emailNorm, hash]
     );
 
     return NextResponse.json({ ok: true });
